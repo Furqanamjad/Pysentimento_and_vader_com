@@ -1,0 +1,557 @@
+#!/usr/bin/env python
+# coding: utf-8
+
+# # Used Libaries
+
+# In[1]:
+
+
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+sns.set()
+get_ipython().run_line_magic('matplotlib', 'inline')
+import re
+
+
+# ### Scrape Tweets
+
+# In[2]:
+
+
+data = pd.read_csv('spanish.csv')
+df = data.copy()
+df.head()
+
+
+# In[3]:
+
+
+#X = df.drop(['PassengerId','Survived'], axis=1)
+tweet = df[['content','date']]
+
+
+# In[4]:
+
+
+tweet
+
+
+# In[5]:
+
+
+#PREPROCESSING USING REGULAR EXPRESSION
+def clean_tweets(tweet):
+    
+    # remove URL
+    tweet = re.sub(r"http\S+", "", tweet)
+    
+    # Remove usernames
+    tweet = re.sub(r"@[^\s]+[\s]?",'',tweet)
+    
+    # remove special characters 
+    tweet = re.sub('[^ a-zA-Z0-9]', '', tweet)
+    
+    
+    # remove Numbers
+    tweet = re.sub('[0-9]', '', tweet)
+    
+    
+    tweet = re.sub(r"^https://t.co/[a-zA-Z0-9]*\s", " ", tweet)
+    tweet = re.sub(r"\s+https://t.co/[a-zA-Z0-9]*\s", " ", tweet)
+    tweet = re.sub(r"\s+https://t.co/[a-zA-Z0-9]*$", " ", tweet)
+    tweet = tweet.lower()
+    tweet = re.sub(r"that's","that is",tweet)
+    tweet = re.sub(r"there's","there is",tweet)
+    tweet = re.sub(r"what's","what is",tweet)
+    tweet = re.sub(r"where's","where is",tweet)
+    tweet = re.sub(r"it's","it is",tweet)
+    tweet = re.sub(r"who's","who is",tweet)
+    tweet = re.sub(r"i'm","i am",tweet)
+    tweet = re.sub(r"she's","she is",tweet)
+    tweet = re.sub(r"he's","he is",tweet)
+    tweet = re.sub(r"they're","they are",tweet)
+    tweet = re.sub(r"who're","who are",tweet)
+    tweet = re.sub(r"ain't","am not",tweet)
+    tweet = re.sub(r"wouldn't","would not",tweet)
+    tweet = re.sub(r"shouldn't","should not",tweet)
+    tweet = re.sub(r"can't","can not",tweet)
+    tweet = re.sub(r"couldn't","could not",tweet)
+    tweet = re.sub(r"won't","will not",tweet)
+    tweet = re.sub(r"\W"," ",tweet)
+    tweet = re.sub(r"\d"," ",tweet)
+    tweet = re.sub(r"\s+[a-z]\s+"," ",tweet)
+    tweet = re.sub(r"\s+[a-z]$"," ",tweet)
+    tweet = re.sub(r"^[a-z]\s+"," ",tweet)
+    tweet = re.sub(r"\s+"," ",tweet)
+    
+    
+    return tweet
+
+
+# In[260]:
+
+
+# string = input(Sentimental)
+# #splitting the string
+# words = string.split()
+# #slicing the list (negative index means index from the end)
+# #-1 means the last element of the list
+# print(words[2])
+
+
+# In[7]:
+
+
+tweet['content'] = tweet['content'].apply(clean_tweets)
+
+
+# In[261]:
+
+
+tweet.head()
+
+
+# In[263]:
+
+
+Y = tweet.drop(['date'], axis=1)
+X= tweet['content']
+
+
+# In[264]:
+
+
+Y
+
+
+# In[ ]:
+
+
+
+
+
+# In[11]:
+
+
+numpy_array = tweet['content'].to_numpy()
+
+
+# In[12]:
+
+
+numpy_array
+
+
+# # sentimental_analyzer
+
+# In[13]:
+
+
+from pysentimiento import create_analyzer
+sentimental_analyzer = create_analyzer(task="sentiment", lang="es")
+
+
+# In[16]:
+
+
+Sentimental=sentimental_analyzer.predict(numpy_array)
+
+
+# In[191]:
+
+
+d = pd.DataFrame(Sentimental, columns=['Sentiment_output'])
+d
+
+
+# In[192]:
+
+
+d["Content"] = tweet["content"] 
+
+
+# In[193]:
+
+
+d
+
+
+# In[194]:
+
+
+d[d['Sentiment_output'].astype(str).str.contains("output=NEU")]
+
+
+# # emotion_analyzer
+
+# In[160]:
+
+
+emotion_analyzer = create_analyzer(task="emotion", lang="es")
+
+
+# In[161]:
+
+
+Emotion=emotion_analyzer.predict(numpy_array)
+
+
+# In[162]:
+
+
+Emotion
+
+
+# In[244]:
+
+
+a = pd.DataFrame(Emotion, columns=['Emotion_output'])
+a
+
+
+# In[245]:
+
+
+d["Emotion_output"] = a["Emotion_output"] 
+d
+
+
+# In[246]:
+
+
+df_final=d
+
+
+# In[247]:
+
+
+df_final
+
+
+# In[250]:
+
+
+df_final.to_csv("df_final.csv")
+
+
+# In[251]:
+
+
+df
+
+
+# In[210]:
+
+
+import pandas as pd
+import regex as re
+import seaborn as sns
+import matplotlib.pyplot as plt
+df = pd.read_csv(r'df_final.csv')
+df['Label_Sentiment'] = df.Sentiment_output.str[22:25]
+df['Label_Emotion'] = df.Emotion_output.apply(lambda x: re.findall(r'output=([a-zA-Z]*)',x)[0])
+
+df.drop(['Sentiment_output','Emotion_output','Unnamed: 0'], axis =1, inplace = True)
+
+sns.countplot(df.Label_Sentiment)
+plt.show()
+
+
+sns.countplot(df.Label_Emotion)
+plt.show()
+
+
+# In[213]:
+
+
+type(df.Label_Emotion)
+
+
+# In[215]:
+
+
+df.Label_Emotion.value_counts()
+
+
+# In[216]:
+
+
+df.Label_Sentiment.value_counts()
+
+
+# # English
+
+# In[217]:
+
+
+sentimental_analyzer_en = create_analyzer(task="sentiment", lang="en")
+
+
+# In[219]:
+
+
+eng = pd.read_csv('eng_tweets.csv')
+df_eng = eng.copy()
+df_eng.head()
+
+
+# In[220]:
+
+
+df_eng['Embedded_text'] = df_eng['Embedded_text'].apply(clean_tweets)
+
+
+# In[221]:
+
+
+df_eng.head(12)
+
+
+# In[222]:
+
+
+numpy_array_eng = df_eng['Embedded_text'].to_numpy()
+
+
+# In[223]:
+
+
+numpy_array_eng
+
+
+# In[224]:
+
+
+sentimental_eng=sentimental_analyzer_en .predict(numpy_array_eng)
+
+
+# In[225]:
+
+
+sentimental_eng
+
+
+# In[237]:
+
+
+df_final=e['eng_output']
+df_final
+
+
+# In[228]:
+
+
+e = pd.DataFrame(sentimental_eng, columns=['eng_output'])
+e
+
+
+# In[254]:
+
+
+df_final["sentimental_eng"] = e["eng_output"] 
+df_final
+
+
+# In[255]:
+
+
+df_final.to_csv("df_final.csv")
+
+
+# In[258]:
+
+
+import pandas as pd
+import regex as re    
+import seaborn as sns
+import matplotlib.pyplot as plt
+df = pd.read_csv(r'df_final.csv')
+df['Label_Sentiment'] = df.Sentiment_output.str[22:25]
+df['Label_Emotion'] = df.Emotion_output.apply(lambda x: re.findall(r'output=([a-zA-Z]*)',x)[0])
+
+df['eng_Label_Sentiment'] = df.sentimental_eng.str[22:25]
+#df['Label_Emotion'] = df.Emotion_output.apply(lambda x: re.findall(r'output=([a-zA-Z]*)',x)[0])
+
+df.drop(['Sentiment_output','Emotion_output','Unnamed: 0'], axis =1, inplace = True)
+
+sns.countplot(df.Label_Sentiment)
+plt.show()
+
+
+sns.countplot(df.eng_Label_Sentiment)
+plt.show()
+
+sns.countplot(df.Label_Emotion)
+plt.show()
+
+
+# In[259]:
+
+
+df.eng_Label_Sentiment.value_counts()
+
+
+# # Sentimental using Vader Libary
+
+# In[268]:
+
+
+df_eng
+
+
+# In[272]:
+
+
+import nltk
+nltk.download('stopwords')
+
+
+# In[273]:
+
+
+from nltk.corpus import stopwords
+from nltk.tokenize import word_tokenize
+
+
+# In[274]:
+
+
+from nltk.corpus import stopwords
+stops = set(stopwords.words("english"))      
+stops
+
+
+# In[277]:
+
+
+df_eng['STOPWORD']=df_eng['Embedded_text'].apply(lambda x:' '.join([word for word in x.split()if word not in (stops)]))
+
+
+# In[279]:
+
+
+df_eng['STOPWORD'].head()
+
+
+# In[281]:
+
+
+df_eng[['Embedded_text']].head()
+
+
+# In[282]:
+
+
+col_list=['Cleaned','STOPWORD']
+
+
+# In[ ]:
+
+
+
+
+
+# In[ ]:
+
+
+
+
+
+# In[ ]:
+
+
+
+
+
+# In[ ]:
+
+
+
+
+
+# In[284]:
+
+
+from nltk.corpus import sentiwordnet as swn
+#from textblob import TextBlob
+from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
+
+
+# In[285]:
+
+
+sid=SentimentIntensityAnalyzer()
+
+
+# In[286]:
+
+
+df_eng['VaderValues']=df_eng['STOPWORD'].apply(lambda x: sid.polarity_scores(x))
+
+
+# In[288]:
+
+
+df_eng['VaderValues'].head()
+
+
+# In[289]:
+
+
+df_eng['VaderScore']=df_eng['VaderValues'].apply(lambda x: x['compound'])
+
+
+# In[290]:
+
+
+df_eng['VaderScore']=df_eng['VaderScore'].apply(lambda score: 'positive' if score >= 0.05 else('negative' if score <= -0.05  else 'neutral')) 
+
+
+# In[291]:
+
+
+df_eng['VaderScore']
+
+
+# In[292]:
+
+
+df_eng=df_eng.drop(columns='VaderValues', axis=0)
+
+
+# In[293]:
+
+
+df_eng
+
+
+# In[294]:
+
+
+df_eng['VaderScore'].value_counts()
+
+
+# In[295]:
+
+
+sns.countplot(x='VaderScore',data=df_eng) 
+
+
+# In[296]:
+
+
+sns.countplot(df.eng_Label_Sentiment)
+plt.show()
+
+
+# Here Is the difference between them,
+
+# Using Vader and Pysentimento Results are different in english text sentiments
+
+# In[ ]:
+
+
+
+
